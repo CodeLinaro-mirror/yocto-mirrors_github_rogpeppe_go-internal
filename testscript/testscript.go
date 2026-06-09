@@ -521,6 +521,14 @@ func (ts *TestScript) setup() string {
 	}
 	if runtime.GOOS == "windows" {
 		env.Vars = append(env.Vars, "exe=.exe")
+		// SystemRoot (and windir) are required for networking to work in
+		// subprocesses: without them Winsock cannot load its service
+		// providers and any socket operation fails.
+		for _, name := range []string{"SystemRoot", "windir"} {
+			if v := os.Getenv(name); v != "" {
+				env.Vars = append(env.Vars, name+"="+v)
+			}
+		}
 	} else {
 		env.Vars = append(env.Vars, "exe=")
 	}

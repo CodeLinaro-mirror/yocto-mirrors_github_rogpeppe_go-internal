@@ -1,0 +1,40 @@
+# The go plugin starts a module proxy serving the modules in the directory
+# given to "plugin go" and provides a "go" command that builds against it.
+plugin go .gomodproxy
+
+# The plugin sets GOPROXY to point at its own proxy server, and the "go"
+# command (provided by the plugin) runs against it.
+go env GOPROXY
+stdout '^http://.*/mod$'
+
+# Build and run a program that depends on a module served only by the proxy.
+go mod init example.com/m
+go get fruit.com@v1.0.0
+go run .
+stdout '^Apple$'
+
+# A failing go command can be negated.
+! go build ./does-not-exist
+
+-- m.go --
+package main
+
+import (
+	"fmt"
+
+	"fruit.com/fruit"
+)
+
+func main() {
+	fmt.Println(fruit.Name)
+}
+
+-- .gomodproxy/fruit.com_v1.0.0/go.mod --
+module fruit.com
+
+go 1.16
+
+-- .gomodproxy/fruit.com_v1.0.0/fruit/fruit.go --
+package fruit
+
+const Name = "Apple"
