@@ -175,8 +175,19 @@ func TestScripts(t *testing.T) {
 		Cmds: map[string]func(ts *TestScript, neg bool, args []string){
 			"setSpecialVal":    setSpecialVal,
 			"ensureSpecialVal": ensureSpecialVal,
-			"interrupt":        interrupt,
-			"waitfile":         waitFile,
+			"register": func(ts *TestScript, neg bool, args []string) {
+				// register <name> <text> dynamically defines a command
+				// that writes <text> to stdout, for the rest of the test.
+				if len(args) != 2 {
+					ts.Fatalf("usage: register <name> <text>")
+				}
+				text := args[1]
+				ts.SetCmd(args[0], func(ts *TestScript, neg bool, args []string) {
+					fmt.Fprintln(ts.Stdout(), text)
+				})
+			},
+			"interrupt": interrupt,
+			"waitfile":  waitFile,
 			"testdefer": func(ts *TestScript, neg bool, args []string) {
 				testDeferCount++
 				n := testDeferCount
